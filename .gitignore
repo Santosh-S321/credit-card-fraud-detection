@@ -3,3 +3,4 @@ data/raw/
 data/processed/
 .ipynb_checkpoints/
 __pycache__/
+models/
