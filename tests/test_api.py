@@ -5,8 +5,10 @@ from pathlib import Path
 import pytest
 
 MODEL_DIR = Path(os.getenv("MODEL_DIR", "models"))
-pytestmark = pytest.mark.skipif(not (MODEL_DIR / "metadata.json").exists(),
-                                reason="Train the deployment model first: python -m src.train")
+HISTORY_CSV = Path(os.getenv("HISTORY_CSV", "data/raw/fraudTrain.csv"))
+READY = (MODEL_DIR / "xgb_deploy.joblib").exists() and HISTORY_CSV.exists()
+pytestmark = pytest.mark.skipif(
+    not READY, reason="Needs data/raw/fraudTrain.csv and a trained model: python -m src.train")
 
 from fastapi.testclient import TestClient  # noqa: E402
 

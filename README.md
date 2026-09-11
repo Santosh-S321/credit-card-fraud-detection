@@ -1,6 +1,6 @@
 # Credit Card Fraud Detection
 
-An end-to-end fraud decision system for card transactions. For every transaction it estimates the probability of fraud from the card's recent behavior, chooses the cheapest action (approve, ask for an OTP, or block), explains why in plain language, and serves all of this through a FastAPI service with a live demo page.
+An end-to-end fraud decision system for card transactions. For every transaction it estimates the probability of fraud from the card's recent behavior, chooses the cheapest action (approve, ask for an OTP, or block), explains why in plain language, and serves all of this through a FastAPI service with a demo page that replays held-out transactions.
 
 The project goes beyond model accuracy: it uses leak-free time-based evaluation, tests that real-time features match training features, and makes decisions by the money at stake rather than a fixed score cutoff.
 
@@ -239,4 +239,4 @@ Contribution values above are illustrative. Status codes: `422` invalid input or
 
 ## Data
 
-[Credit Card Transactions Fraud Detection Dataset](https://www.kaggle.com/datasets/kartik2112/fraud-detection) on Kaggle, generated with the Sparkov Data Generation tool. Simulated transactions from January 2019 to December 2020.
+[Credit Card Transactions Fraud Detection Dataset](https://www.kaggle.com/datasets/kartik2112/fraud-detection) on Kaggle (CC0: public domain), generated with the [Sparkov Data Generation](https://github.com/namebrandon/Sparkov_Data_Generation) tool. Simulated transactions from January 2019 to December 2020.
