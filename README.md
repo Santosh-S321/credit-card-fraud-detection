@@ -147,7 +147,7 @@ credit-card-fraud-detection/
 Tested with Python 3.9.9, pandas 2.3.3, scikit-learn 1.6.1, and xgboost 2.1.4.
 
 ```bash
-git clone <repo-url>
+git clone https://github.com/Santosh-S321/credit-card-fraud-detection.git
 cd credit-card-fraud-detection
 python -m venv .venv
 # Windows: .venv\Scripts\activate    macOS/Linux: source .venv/bin/activate
@@ -233,6 +233,7 @@ Contribution values above are illustrative. Status codes: `422` invalid input or
 - Add features for the first transaction in a spree (for example, new merchant for this card).
 - Upgrade from Python 3.9, which reached end of life in October 2025; retrain and rerun the tests after upgrading.
 - Move card history to Redis to support multiple API workers.
+- Containerize with Docker and host a live demo.
 
 ---
 
