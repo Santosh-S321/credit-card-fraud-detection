@@ -1,0 +1,339 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Card fraud decisions</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #EDF1EC;   /* cheque-paper green-grey */
+    --sheet: #F7F9F6;
+    --ink: #1F2A2E;     /* blue-black ink */
+    --muted: #56625F;
+    --rule: #C9D3CB;
+    --pen: #24407A;     /* fountain-pen blue for actions */
+    --approve: #2F6B4F;
+    --otp: #87570F;
+    --block: #A12A2A;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--paper); color: var(--ink);
+    font: 400 16px/1.5 "IBM Plex Sans", system-ui, sans-serif;
+    font-variant-numeric: tabular-nums;
+  }
+  header, main { max-width: 1240px; margin: 0 auto; padding-left: 24px; padding-right: 24px; }
+  header { padding-top: 40px; padding-bottom: 24px; border-bottom: 1px solid var(--rule); }
+  h1 { font-size: 2.25rem; line-height: 1.1; font-weight: 600; letter-spacing: -0.01em; margin: 0 0 10px; }
+  h2 { font-size: 1.25rem; line-height: 1.3; font-weight: 600; margin: 0 0 6px; }
+  h3 { font-size: 1rem; font-weight: 600; margin: 20px 0 6px; }
+  p { margin: 0; max-width: 68ch; }
+  .muted { color: var(--muted); }
+
+  main { display: grid; grid-template-columns: minmax(280px, 330px) 1fr; gap: 48px; padding-top: 32px; padding-bottom: 72px; }
+  main > section { min-width: 0; }  /* lets the wide ledger scroll instead of stretching the page */
+  @media (max-width: 960px) { main { grid-template-columns: minmax(0, 1fr); gap: 40px; } }
+
+  form { display: grid; gap: 14px; margin-top: 18px; }
+  label { display: grid; gap: 4px; font-size: 0.9375rem; font-weight: 500; }
+  label.check { display: flex; align-items: center; gap: 8px; font-weight: 400; }
+  input, select {
+    font: inherit; color: var(--ink); background: var(--sheet);
+    border: 1px solid var(--rule); border-radius: 2px; padding: 8px 10px; width: 100%;
+  }
+  label.check input { width: auto; }
+  button {
+    font: inherit; font-weight: 500; border-radius: 2px; padding: 9px 16px;
+    border: 1px solid var(--pen); cursor: pointer;
+  }
+  .primary { background: var(--pen); color: #fff; }
+  .secondary { background: transparent; color: var(--pen); }
+  .text-button { background: none; border: none; padding: 0; color: var(--pen); text-decoration: underline; justify-self: start; }
+  button:disabled { opacity: 0.55; cursor: progress; }
+  :focus-visible { outline: 3px solid var(--pen); outline-offset: 2px; }
+  .actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
+
+  #result { margin-top: 32px; padding-top: 24px; border-top: 1px solid var(--rule); }
+  .stamp {
+    display: inline-block; margin: 6px 0 14px; padding: 2px 14px;
+    font-size: 1.625rem; font-weight: 600; border: 3px solid currentColor; border-radius: 4px;
+    transform: rotate(-3deg);
+  }
+  .stamp.landing { animation: land 220ms ease-out; }
+  @keyframes land { from { opacity: 0; transform: rotate(-3deg) scale(1.3); } to { opacity: 1; transform: rotate(-3deg) scale(1); } }
+  @media (prefers-reduced-motion: reduce) { .stamp.landing { animation: none; } }
+  .approve { color: var(--approve); }
+  .otp { color: var(--otp); }
+  .block { color: var(--block); }
+  ol { margin: 0; padding-left: 20px; }
+  li { margin: 2px 0; }
+  .costs { border-collapse: collapse; margin-top: 2px; }
+  .costs td { padding: 3px 16px 3px 0; }
+  .chosen { font-weight: 600; }
+  .note { margin-top: 12px; padding-left: 10px; border-left: 3px solid var(--otp); }
+
+  .totals { margin-top: 16px; font-size: 1.0625rem; }
+  .totals strong { font-weight: 600; }
+  .ledger { margin-top: 16px; overflow: auto; max-height: 70vh; background: var(--sheet); border: 1px solid var(--rule); }
+  table.log { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+  .log th { position: sticky; top: 0; background: var(--sheet); text-align: left; font-weight: 500; color: var(--muted); padding: 10px; border-bottom: 1px solid var(--rule); white-space: nowrap; }
+  .log td { padding: 8px 10px; border-bottom: 1px solid #DDE4DE; white-space: nowrap; }
+  .log .num { text-align: right; }
+  .log tbody tr { cursor: pointer; }
+  .log tbody tr:hover, .log tbody tr.selected { background: #E3EAE4; }
+  .log td:first-child { border-left: 4px solid transparent; }
+  .log tr[data-action="approve"] td:first-child { border-left-color: var(--approve); }
+  .log tr[data-action="otp"] td:first-child { border-left-color: var(--otp); }
+  .log tr[data-action="block"] td:first-child { border-left-color: var(--block); }
+  .mistake { color: var(--block); font-weight: 600; }
+  .empty td { color: var(--muted); cursor: default; }
+  .error { color: var(--block); margin-top: 10px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Card fraud decisions</h1>
+  <p>Each transaction gets the action with the lowest expected cost: approve it, ask for an OTP, or block it.</p>
+  <p class="muted" id="status" style="margin-top:6px">Connecting to the scoring service…</p>
+</header>
+
+<main>
+  <section aria-labelledby="check-title">
+    <h2 id="check-title">Check a transaction</h2>
+    <p class="muted">Scores one transaction against the card's history.</p>
+    <form id="check">
+      <label>Card number <input id="card" inputmode="numeric" autocomplete="off" required></label>
+      <label>Date and time <input id="time" type="datetime-local" step="1" required></label>
+      <label>Amount in dollars <input id="amount" type="number" min="0.01" step="0.01" required></label>
+      <label>Merchant category <select id="category" required></select></label>
+      <label class="check"><input id="record" type="checkbox"> Add to the card's history</label>
+      <button type="button" class="text-button" id="example">Fill in a new-card example</button>
+      <button type="submit" class="primary" id="checkButton">Check transaction</button>
+    </form>
+    <p class="error" id="checkError" role="alert"></p>
+    <div id="result" aria-live="polite">
+      <p class="muted">Check a transaction or select a row in the replay to see its decision.</p>
+    </div>
+  </section>
+
+  <section aria-labelledby="replay-title">
+    <h2 id="replay-title">Replay June–December 2020 traffic</h2>
+    <p class="muted">Sends held-out transactions through the service in time order. Fraud labels only grade the decisions; the model never sees them.</p>
+    <div class="actions">
+      <button class="primary" id="next25">Replay next 25</button>
+      <button class="secondary" id="untilFraud">Replay until the next fraud</button>
+    </div>
+    <p class="totals" id="totals"></p>
+    <p class="muted" id="replayNote" style="margin-top:4px"></p>
+    <div class="ledger">
+      <table class="log">
+        <thead><tr>
+          <th scope="col">Time</th><th scope="col">Card ending</th><th scope="col">Category</th>
+          <th scope="col" class="num">Amount</th><th scope="col" class="num">Probability</th>
+          <th scope="col">Decision</th><th scope="col">Outcome</th>
+        </tr></thead>
+        <tbody id="log"><tr class="empty"><td colspan="7">No transactions replayed yet.</td></tr></tbody>
+      </table>
+    </div>
+  </section>
+</main>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const DECISION = { approve: "Approved", otp: "OTP requested", block: "Blocked" };
+const ACTION_NAME = { approve: "Approve", otp: "Ask for OTP", block: "Block" };
+const MAX_ROWS = 500;
+
+const money = (v) => "$" + Number(v).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const shortTime = (iso) => new Date(iso.replace(" ", "T"))
+  .toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+const percent = (v) => (v * 100).toFixed(v > 0 && v < 0.01 ? 2 : 1) + "%";
+
+function el(tag, className, text) {
+  const node = document.createElement(tag);
+  if (className) node.className = className;
+  if (text !== undefined) node.textContent = text;
+  return node;
+}
+
+async function api(path, options = {}) {
+  const res = await fetch(path, { headers: { "Content-Type": "application/json" }, ...options });
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const d = body.detail;
+    const message = Array.isArray(d)
+      ? d.map((e) => `${e.loc[e.loc.length - 1]}: ${e.msg}`).join("; ")
+      : d || `The service returned an error (${res.status}).`;
+    throw new Error(message);
+  }
+  return body;
+}
+
+function outcome(isFraud, action) {
+  if (isFraud) {
+    if (action === "approve") return { text: "Fraud missed", mistake: true };
+    return { text: action === "block" ? "Fraud blocked" : "Fraud challenged", mistake: false };
+  }
+  if (action === "block") return { text: "Genuine, blocked", mistake: true };
+  if (action === "otp") return { text: "Genuine, challenged", mistake: false };
+  return { text: "Genuine", mistake: false };
+}
+
+function renderResult(result, context) {
+  const box = $("result");
+  box.replaceChildren();
+  if (context) box.append(el("p", "muted", context));
+
+  box.append(el("div", `stamp ${result.action} landing`, DECISION[result.action]));
+  box.append(el("p", "", `Fraud probability ${percent(result.fraud_probability)}`));
+
+  if (result.guardrail_applied) {
+    box.append(el("p", "note", "The amount is larger than anything in the training data, so an OTP is required instead of approval."));
+  }
+
+  box.append(el("h3", "", "Strongest signals toward fraud"));
+  if (result.reasons.length) {
+    const list = el("ol");
+    result.reasons.forEach((r) => list.append(el("li", "", r.text)));
+    box.append(list);
+  } else {
+    box.append(el("p", "muted", "Nothing about this transaction pushed toward fraud."));
+  }
+
+  box.append(el("h3", "", "Expected cost of each action"));
+  const table = el("table", "costs");
+  Object.entries(result.expected_costs).forEach(([action, cost]) => {
+    const tr = el("tr", action === result.action ? "chosen" : "");
+    tr.append(el("td", "", ACTION_NAME[action]), el("td", "", money(cost)),
+              el("td", "", action === result.action ? "Chosen" : ""));
+    table.append(tr);
+  });
+  box.append(table);
+}
+
+function renderTotals(t, cursor, totalRows) {
+  const box = $("totals");
+  if (!t.replayed) { box.textContent = `Nothing replayed yet. ${totalRows.toLocaleString()} transactions are waiting.`; return; }
+  const parts = [
+    `<strong>${t.replayed.toLocaleString()}</strong> of ${totalRows.toLocaleString()} transactions replayed.`,
+    t.frauds
+      ? `<strong>${t.frauds_intercepted}</strong> of ${t.frauds} frauds intercepted.`
+      : "No fraud so far.",
+    `<strong>${t.genuine_otp}</strong> genuine customers asked for an OTP and <strong>${t.genuine_blocked}</strong> blocked.`,
+  ];
+  if (t.fraud_value > 0) {
+    const cut = 1 - t.cost / t.fraud_value;
+    parts.push(cut >= 0
+      ? `Fraud-related cost cut by <strong>${percent(cut)}</strong>.`
+      : `So far, checks have cost <strong>${money(t.cost - t.fraud_value)}</strong> more than approving everything.`);
+  }
+  box.innerHTML = parts.join(" ");  // only numbers from our own formatting are inserted
+}
+
+function addLogRow(row) {
+  const body = $("log");
+  body.querySelector(".empty")?.remove();
+  const { text, mistake } = outcome(row.is_fraud, row.result.action);
+  const tr = el("tr");
+  tr.dataset.action = row.result.action;
+  tr.tabIndex = 0;
+  tr.append(
+    el("td", "", shortTime(row.time)),
+    el("td", "", row.card),
+    el("td", "", row.category.replace("_", " ")),
+    el("td", "num", money(row.amt)),
+    el("td", "num", percent(row.result.fraud_probability)),
+    el("td", row.result.action, DECISION[row.result.action]),
+    el("td", mistake ? "mistake" : "", text),
+  );
+  const show = () => {
+    body.querySelectorAll(".selected").forEach((r) => r.classList.remove("selected"));
+    tr.classList.add("selected");
+    renderResult(row.result, `Card ending ${row.card}, ${money(row.amt)} on ${row.time}. Outcome: ${text}.`);
+  };
+  tr.addEventListener("click", show);
+  tr.addEventListener("keydown", (e) => { if (e.key === "Enter") show(); });
+  body.prepend(tr);
+  while (body.rows.length > MAX_ROWS) body.lastElementChild.remove();
+  return show;
+}
+
+function setReplayBusy(busy) {
+  $("next25").disabled = busy;
+  $("untilFraud").disabled = busy;
+}
+
+async function replay(untilFraud) {
+  setReplayBusy(true);
+  $("replayNote").textContent = untilFraud ? "Scanning transactions…" : "";
+  try {
+    const data = await api(`/demo/replay?n=25&until_fraud=${untilFraud}`, { method: "POST" });
+    let showLast = null;
+    data.rows.forEach((row) => { showLast = addLogRow(row); });
+    renderTotals(data.totals, data.cursor, data.total_rows);
+    const skipped = data.skipped ? ` ${data.skipped} skipped because their card already had later history.` : "";
+    $("replayNote").textContent = untilFraud
+      ? `Scanned ${data.processed.toLocaleString()} transactions and listed the frauds and challenged or blocked ones.${skipped}`
+      : skipped.trim();
+    if (untilFraud && showLast) showLast();
+    if (data.cursor >= data.total_rows) $("replayNote").textContent = "Every held-out transaction has been replayed. Restart the service to begin again.";
+  } catch (err) {
+    $("replayNote").textContent = err.message;
+  } finally {
+    setReplayBusy(false);
+  }
+}
+
+$("check").addEventListener("submit", async (event) => {
+  event.preventDefault();
+  $("checkError").textContent = "";
+  $("checkButton").disabled = true;
+  try {
+    const body = {
+      cc_num: $("card").value.trim(),  // sent as text: 19-digit card numbers lose precision as JS numbers
+      trans_date_trans_time: $("time").value,
+      amt: parseFloat($("amount").value),
+      category: $("category").value,
+    };
+    const result = await api(`/score?record=${$("record").checked}`, { method: "POST", body: JSON.stringify(body) });
+    renderResult(result, $("record").checked ? "Added to the card's history." : "Not added to the card's history.");
+  } catch (err) {
+    $("checkError").textContent = err.message;
+  } finally {
+    $("checkButton").disabled = false;
+  }
+});
+
+$("example").addEventListener("click", () => {
+  $("card").value = "4000123412341234";
+  $("time").value = "2020-07-01T22:15:00";
+  $("amount").value = "950";
+  $("category").value = "shopping_net";
+  $("record").checked = false;
+});
+$("next25").addEventListener("click", () => replay(false));
+$("untilFraud").addEventListener("click", () => replay(true));
+
+(async function start() {
+  try {
+    const health = await api("/health");
+    const through = new Date(health.history_through.replace(" ", "T")).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
+    $("status").textContent = `Card history loaded through ${through} for ${health.cards_seeded.toLocaleString()} cards.`;
+    health.categories.forEach((c) => $("category").append(new Option(c.replace("_", " "), c)));
+    if (health.demo_available) {
+      const demo = await api("/demo/status");
+      renderTotals(demo.totals, demo.cursor, demo.total_rows);
+    } else {
+      $("next25").disabled = $("untilFraud").disabled = true;
+      $("replayNote").textContent = "Replay needs data/raw/fraudTest.csv next to the project.";
+    }
+  } catch (err) {
+    $("status").textContent = `The scoring service isn't responding: ${err.message}`;
+  }
+})();
+</script>
+</body>
+</html>

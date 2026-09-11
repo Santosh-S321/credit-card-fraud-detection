@@ -1,0 +1,43 @@
+{
+  "model_file": "xgb_deploy.joblib",
+  "trained_at": "2026-09-11T05:18:54+00:00",
+  "data_from": "2019-01-01 00:00:18",
+  "data_to": "2020-06-21 12:13:37",
+  "early_stop_from": "2020-04-21 12:13:37",
+  "rows": 1296675,
+  "fraud_rate": 0.005788651743883394,
+  "n_trees": 615,
+  "features": [
+    "amt",
+    "hour",
+    "hours_since_prev",
+    "amt_vs_card_avg",
+    "txn_count_1h",
+    "amt_sum_1h",
+    "txn_count_24h",
+    "amt_sum_24h",
+    "category"
+  ],
+  "categories": [
+    "entertainment",
+    "food_dining",
+    "gas_transport",
+    "grocery_net",
+    "grocery_pos",
+    "health_fitness",
+    "home",
+    "kids_pets",
+    "misc_net",
+    "misc_pos",
+    "personal_care",
+    "shopping_net",
+    "shopping_pos",
+    "travel"
+  ],
+  "max_amount_seen": 28948.9,
+  "versions": {
+    "xgboost": "2.1.4",
+    "scikit-learn": "1.6.1",
+    "pandas": "2.3.3"
+  }
+}

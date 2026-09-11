@@ -1,0 +1,10 @@
+{
+  "t_otp": 0.0075,
+  "t_block": 0.25,
+  "costs": {
+    "otp_friction": 2.0,
+    "block_friction": 30.0,
+    "otp_stop_rate": 0.8
+  },
+  "decision_rule": "expected_cost"
+}

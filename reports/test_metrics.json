@@ -1,0 +1,15 @@
+{
+  "test_rows": 555719,
+  "test_fraud_rate": 0.0038598644278853163,
+  "pr_auc": 0.962159178939282,
+  "precision_at_recall_70": 0.9954809554551324,
+  "precision_at_recall_80": 0.988479262672811,
+  "precision_at_recall_90": 0.922673031026253,
+  "no_model_cost": 1133324.6800000002,
+  "policy_cost": 26712.429999999997,
+  "cost_cut": 0.9764300288598674,
+  "fraud_recall_any_action": 0.9631701631701631,
+  "genuine_friction_rate": 0.003999465292806382,
+  "genuine_block_rate": 0.0005076105452929509,
+  "first_fraud_recall": 0.8691588785046729
+}

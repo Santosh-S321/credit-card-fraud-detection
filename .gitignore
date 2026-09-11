@@ -1,6 +1,7 @@
 .venv/
 data/raw/
 data/processed/
+models/*.joblib
 .ipynb_checkpoints/
 __pycache__/
-models/
+.pytest_cache/
